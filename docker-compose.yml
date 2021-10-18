@@ -1,49 +1,73 @@
-version: '3.4'
+version: '3.8'
 
 services:
   database:
-    image: postgres:12.6
+    container_name: mariadb
+    image: mariadb
     environment:
-      POSTGRES_PASSWORD: postgres
+      - MYSQL_DATABASE=invoice
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/dbpassword
     volumes:
-      - ./dbdata:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    # command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+      - dbdata:/var/lib/mysql
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    expose:
+      - 3306
+    restart: always
+    secrets:
+      - dbpassword
+  react:
+    build: react
+    tty: true
+    depends_on:
+      - rails
+    ports:
+      - 3002:3000
+    volumes:
+      - ./react/app:/app
+      - '/app/node_modules'
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    # command: bash -c "npm start"
+  rails:
+    container_name: rails301
+    build: rails
+    tty: true
+    # RUN git clone https://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@github.com/ouaziz/rails_api_jwt.git app
+    # command: cd /app && rails db:drop && rails db:create && rails db:migrate && rails db:seed
+    # command: bash -c "bundle install"
     depends_on:
       - database
       - redis
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
-      - ./script_api:/app
-      # - ./script_api/gem_cache:/usr/local/bundle/gems
-      # - ./script_api/node_modules:/app/node_modules
-    env_file: ./script_api/.env
-    environment:
+      - ./rails/app:/app
+    env_file: 
+      - .env
+    environment: 
       RAILS_ENV: development
   redis:
-    image: redis:5.0.7
-  sidekiq:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - app
-      - database
-      - redis
-    volumes:
-      - ./script_api:/app
-      # - ./script_api/gem_cache:/usr/local/bundle/gems
-      # - ./script_api/node_modules:/app/node_modules
-    env_file: ./script_api/.env
-    environment:
-      RAILS_ENV: development
-    entrypoint: sidekiq-entrypoint.sh
+    container_name: redis626
+    image: redis:6.2.6
+  # sidekiq:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - rails
+  #     - database
+  #     - redis
+  #   volumes:
+  #     - ./rails/app:/app
+  #     # - ./script_api/gem_cache:/usr/local/bundle/gems
+  #     # - ./script_api/node_modules:/app/node_modules
+  #   env_file: ./rails/app/.env
+  #   environment:
+  #     RAILS_ENV: development
+  #   entrypoint: ./entrypoints/sidekiq-entrypoint.sh
 volumes:
   dbdata:
-  # gem_cache:
-  # node_modules:
+  railsapp:
+secrets:
+  dbpassword:
+    file: database/password.txt  
