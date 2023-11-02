@@ -12,24 +12,21 @@ services:
       # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     expose:
       - 3306
-    restart: always
     secrets:
       - dbpassword
-  react:
-    build: react
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
     tty: true
-    depends_on:
-      - rails
-    ports:
-      - 3002:3000
-    volumes:
-      - ./react/app:/app
-      - '/app/node_modules'
+    links:
+      - database
     environment:
-      - CHOKIDAR_USEPOLLING=true
-    # command: bash -c "npm start"
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    ports:
+      - 8081:80
   rails:
-    container_name: rails301
+    container_name: rails7
     build: rails
     tty: true
     # RUN git clone https://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@github.com/ouaziz/rails_api_jwt.git app
@@ -41,14 +38,14 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - ./rails/app:/app
+      - ./rails/rails7_saas:/app
     env_file: 
       - .env
     environment: 
       RAILS_ENV: development
   redis:
-    container_name: redis626
-    image: redis:6.2.6
+    container_name: redis721
+    image: redis:7.2.1
   # sidekiq:
   #   build:
   #     context: .
