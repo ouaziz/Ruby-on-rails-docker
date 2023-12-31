@@ -38,7 +38,7 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - ./rails/rails7_saas:/app
+      - ./rails/assetsMgmt:/app
     env_file: 
       - .env
     environment: 
